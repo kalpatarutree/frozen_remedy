@@ -9,13 +9,24 @@ export default async function handler(req, res) {
   if (!token) return res.status(500).json({ error: "Server not configured" });
 
   try {
-    const reservation = req.body;
+    let reservation = req.body;
+    if (typeof reservation === "string") reservation = JSON.parse(reservation);
+
+    if (!reservation || !reservation.name) {
+      return res.status(400).json({ error: "Invalid reservation data" });
+    }
 
     // Get current reservations.json
     const getRes = await fetch(
       `https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`,
       { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
     );
+
+    if (!getRes.ok) {
+      const err = await getRes.json();
+      return res.status(500).json({ error: "GitHub read error: " + (err.message || getRes.status) });
+    }
+
     const fileInfo = await getRes.json();
     const current  = JSON.parse(Buffer.from(fileInfo.content, "base64").toString("utf8"));
     current.push(reservation);
@@ -37,11 +48,11 @@ export default async function handler(req, res) {
 
     if (!putRes.ok) {
       const err = await putRes.json();
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: "GitHub write error: " + (err.message || putRes.status) });
     }
 
     res.status(200).json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: e.message || "Unknown error" });
   }
 }
