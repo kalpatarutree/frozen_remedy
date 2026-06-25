@@ -94,5 +94,17 @@
     "price": 20,
     "status": "pending",
     "createdAt": "2026-06-25T23:56:18.754Z"
+  },
+  {
+    "id": "1782431798478",
+    "name": "Curtis",
+    "email": "curtis.humphrey@gmail.com",
+    "flavor": "Lavender Chill",
+    "flavorId": "lavender-chill",
+    "size": "pint",
+    "quantity": 1,
+    "price": 12,
+    "status": "pending",
+    "createdAt": "2026-06-25T23:56:38.478Z"
   }
 ]
