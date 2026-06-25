@@ -133,10 +133,13 @@
       3. Copy the <strong>Template ID</strong> and your account's <strong>Public Key</strong>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;max-width:500px">
-      <div class="field"><label>EmailJS Service ID</label><input type="text" id="ejs-service" placeholder="service_xxxxxxx" /></div>
-      <div class="field"><label>EmailJS Template ID</label><input type="text" id="ejs-template" placeholder="template_xxxxxxx" /></div>
+      <div class="field"><label>Your Email Address (receives reservation notifications)</label><input type="email" id="ejs-owner-email" placeholder="you@example.com" /></div>
       <div class="field"><label>EmailJS Public Key</label><input type="text" id="ejs-pubkey" placeholder="xxxxxxxxxxxxxxxxxxxx" /></div>
-      <div><button onclick="saveEmailJS()" style="padding:10px 24px;background:var(--brown);color:white;border:none;cursor:pointer;font-family:inherit">Save Email Config</button> <span id="ejs-status" style="font-size:0.8rem;color:var(--brown-light);margin-left:10px"></span></div>
+      <div class="field"><label>EmailJS Service ID</label><input type="text" id="ejs-service" placeholder="service_xxxxxxx" /></div>
+      <div class="field"><label>Owner Notification Template ID <span style="font-weight:normal;text-transform:none;letter-spacing:0">(email you receive with Confirm/Decline links)</span></label><input type="text" id="ejs-owner-tpl" placeholder="template_xxxxxxx" /></div>
+      <div class="field"><label>Customer Confirmation Template ID <span style="font-weight:normal;text-transform:none;letter-spacing:0">(email customer receives when confirmed)</span></label><input type="text" id="ejs-cust-tpl" placeholder="template_xxxxxxx" /></div>
+      <div class="field"><label>Site URL</label><input type="url" id="site-url" placeholder="https://your-site.vercel.app" /></div>
+      <div><button onclick="saveEmailJS()" style="padding:10px 24px;background:var(--brown);color:white;border:none;cursor:pointer;font-family:inherit">Save & Deploy Email Config</button> <span id="ejs-status" style="font-size:0.8rem;color:var(--brown-light);margin-left:10px"></span></div>
     </div>
   </section>
 
@@ -182,6 +185,26 @@
   const GITHUB_REPO    = "kalpatarutree/frozen_remedy";
   const GITHUB_BRANCH  = "main";
   const PRODUCTS_PATH  = "products.json";
+  const CONFIG_PATH    = "config.json";
+
+  // ── Magic link auto-action ───────────────────────────────────────────────
+  const urlParams = new URLSearchParams(window.location.search);
+  const magicAction = urlParams.get("action");
+  const magicId     = urlParams.get("id");
+
+  if (magicAction && magicId) {
+    // Show a minimal prompt instead of full login
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("login-screen").innerHTML = `
+        <div class="login-box">
+          <h1>Frozen Remedy Admin</h1>
+          <p>${magicAction === "confirm" ? "Confirm this reservation?" : "Decline this reservation?"}</p>
+          <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
+          <button onclick="doLogin()">Sign In & ${magicAction === "confirm" ? "Confirm" : "Decline"}</button>
+          <div class="login-error" id="login-error">Incorrect password.</div>
+        </div>`;
+    });
+  }
 
   // ── Login ────────────────────────────────────────────────────────────────
   function doLogin() {
@@ -218,12 +241,19 @@
       document.getElementById("token-status").textContent = "✓ Token loaded";
     }
 
-    // Load EmailJS config
-    const ejsCfg = JSON.parse(localStorage.getItem("fr_emailjs") || "{}");
-    if (ejsCfg.service)  document.getElementById("ejs-service").value  = ejsCfg.service;
-    if (ejsCfg.template) document.getElementById("ejs-template").value = ejsCfg.template;
-    if (ejsCfg.pubkey)   document.getElementById("ejs-pubkey").value   = ejsCfg.pubkey;
-    if (ejsCfg.pubkey)   emailjs.init(ejsCfg.pubkey);
+    // Load config.json (EmailJS + site settings)
+    try {
+      const cfgRes = await fetch("config.json?v=" + Date.now());
+      siteConfig = await cfgRes.json();
+      const ejs = siteConfig.emailjs || {};
+      if (ejs.publicKey)          document.getElementById("ejs-pubkey").value    = ejs.publicKey;
+      if (ejs.serviceId)          document.getElementById("ejs-service").value   = ejs.serviceId;
+      if (ejs.ownerTemplateId)    document.getElementById("ejs-owner-tpl").value = ejs.ownerTemplateId;
+      if (ejs.customerTemplateId) document.getElementById("ejs-cust-tpl").value  = ejs.customerTemplateId;
+      if (ejs.ownerEmail)         document.getElementById("ejs-owner-email").value = ejs.ownerEmail;
+      if (siteConfig.siteUrl)     document.getElementById("site-url").value      = siteConfig.siteUrl;
+      if (ejs.publicKey)          emailjs.init(ejs.publicKey);
+    } catch(e) {}
 
     try {
       const res = await fetch("products.json?v=" + Date.now());
@@ -237,22 +267,64 @@
     document.getElementById("price-quart").value = data.prices.quart;
     renderFlavors();
     await loadReservations();
+
+    // Handle magic link action after everything is loaded
+    if (magicAction && magicId) {
+      if (magicAction === "confirm") await confirmReservation(magicId);
+      else if (magicAction === "decline") await declineReservation(magicId, true);
+      // Scroll to reservations
+      document.querySelector("#reservations-list")?.scrollIntoView({ behavior: "smooth" });
+      // Clean URL
+      history.replaceState({}, "", "/admin.html");
+    }
   }
 
   // ── EmailJS config ───────────────────────────────────────────────────────
-  function saveEmailJS() {
-    const cfg = {
-      service:  document.getElementById("ejs-service").value.trim(),
-      template: document.getElementById("ejs-template").value.trim(),
-      pubkey:   document.getElementById("ejs-pubkey").value.trim()
-    };
-    localStorage.setItem("fr_emailjs", JSON.stringify(cfg));
-    if (cfg.pubkey) emailjs.init(cfg.pubkey);
-    document.getElementById("ejs-status").textContent = "✓ Saved";
-  }
+  let siteConfig = {};
+  let siteConfigSHA = "";
 
-  function getEmailJSConfig() {
-    return JSON.parse(localStorage.getItem("fr_emailjs") || "{}");
+  async function saveEmailJS() {
+    const token = getToken();
+    if (!token) { alert("Save your GitHub token first."); return; }
+    const btn = document.querySelector("#emailjs-section button");
+    btn.disabled = true;
+    document.getElementById("ejs-status").textContent = "Saving…";
+
+    siteConfig.emailjs = {
+      publicKey:          document.getElementById("ejs-pubkey").value.trim(),
+      serviceId:          document.getElementById("ejs-service").value.trim(),
+      ownerTemplateId:    document.getElementById("ejs-owner-tpl").value.trim(),
+      customerTemplateId: document.getElementById("ejs-cust-tpl").value.trim(),
+      ownerEmail:         document.getElementById("ejs-owner-email").value.trim()
+    };
+    siteConfig.siteUrl = document.getElementById("site-url").value.trim();
+
+    if (siteConfig.emailjs.publicKey) emailjs.init(siteConfig.emailjs.publicKey);
+
+    try {
+      // Get current SHA
+      const getRes = await fetch(
+        "https://api.github.com/repos/" + GITHUB_REPO + "/contents/" + CONFIG_PATH + "?ref=" + GITHUB_BRANCH,
+        { headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json" } }
+      );
+      const info = await getRes.json();
+      siteConfigSHA = info.sha;
+
+      await fetch("https://api.github.com/repos/" + GITHUB_REPO + "/contents/" + CONFIG_PATH, {
+        method: "PUT",
+        headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: "Update email config",
+          content: btoa(unescape(encodeURIComponent(JSON.stringify(siteConfig, null, 2)))),
+          sha: siteConfigSHA,
+          branch: GITHUB_BRANCH
+        })
+      });
+      document.getElementById("ejs-status").textContent = "✓ Saved & deployed";
+    } catch(e) {
+      document.getElementById("ejs-status").textContent = "Error: " + e.message;
+    }
+    btn.disabled = false;
   }
 
   // ── Reservations ─────────────────────────────────────────────────────────
@@ -328,10 +400,10 @@
     btn.textContent = "Confirming…";
 
     try {
-      // Send confirmation email
-      const cfg = getEmailJSConfig();
-      if (cfg.service && cfg.template && cfg.pubkey) {
-        await emailjs.send(cfg.service, cfg.template, {
+      // Send customer confirmation email
+      const ejs = siteConfig.emailjs || {};
+      if (ejs.publicKey && ejs.serviceId && ejs.customerTemplateId) {
+        await emailjs.send(ejs.serviceId, ejs.customerTemplateId, {
           to_email: r.email,
           to_name:  r.name,
           flavor:   r.flavor,
@@ -361,8 +433,8 @@
     }
   }
 
-  async function declineReservation(id) {
-    if (!confirm("Decline this reservation?")) return;
+  async function declineReservation(id, silent = false) {
+    if (!silent && !confirm("Decline this reservation?")) return;
     const r = reservations.find(x => x.id === id);
     if (!r) return;
     r.status = "declined";
