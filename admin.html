@@ -422,7 +422,7 @@
       if (inv && inv.inventory) {
         if (r.size === "pint")  inv.inventory.pints  = Math.max(0, (inv.inventory.pints  || 0) - r.quantity);
         if (r.size === "quart") inv.inventory.quarts = Math.max(0, (inv.inventory.quarts || 0) - r.quantity);
-        await saveAll(true);
+        await saveProductsData();
       }
 
       renderReservations();
@@ -526,6 +526,26 @@
   }
 
   // ── Save to GitHub ───────────────────────────────────────────────────────
+  async function saveProductsData() {
+    const token = getToken();
+    if (!token) return;
+    const getRes = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${PRODUCTS_PATH}?ref=${GITHUB_BRANCH}`,
+      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
+    );
+    const fileInfo = await getRes.json();
+    await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${PRODUCTS_PATH}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "Update inventory after confirmation",
+        content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
+        sha: fileInfo.sha,
+        branch: GITHUB_BRANCH
+      })
+    });
+  }
+
   async function saveAll(silent = false) {
     const token = getToken();
     if (!token) {
