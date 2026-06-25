@@ -1,4 +1,13 @@
+export const config = {
+  api: { bodyParser: true }
+};
+
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const token  = process.env.GITHUB_TOKEN;
@@ -10,10 +19,12 @@ export default async function handler(req, res) {
 
   try {
     let reservation = req.body;
-    if (typeof reservation === "string") reservation = JSON.parse(reservation);
+    if (typeof reservation === "string") {
+      try { reservation = JSON.parse(reservation); } catch(e) {}
+    }
 
-    if (!reservation || !reservation.name) {
-      return res.status(400).json({ error: "Invalid reservation data" });
+    if (!reservation || typeof reservation !== "object") {
+      return res.status(400).json({ error: "Could not parse request body — got: " + JSON.stringify(req.body) });
     }
 
     // Get current reservations.json
@@ -31,14 +42,13 @@ export default async function handler(req, res) {
     const current  = JSON.parse(Buffer.from(fileInfo.content, "base64").toString("utf8"));
     current.push(reservation);
 
-    // Write updated file
     const putRes = await fetch(
       `https://api.github.com/repos/${repo}/contents/${path}`,
       {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: "New reservation: " + reservation.name,
+          message: "New reservation: " + (reservation.name || "unknown"),
           content: Buffer.from(JSON.stringify(current, null, 2)).toString("base64"),
           sha: fileInfo.sha,
           branch
