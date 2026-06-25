@@ -1,0 +1,44 @@
+{
+  "prices": {
+    "pint": 12,
+    "quart": 20
+  },
+  "flavors": [
+    {
+      "id": "nice-dreams",
+      "goal": "Sleep",
+      "name": "Nice Dreams",
+      "desc": "A gentle, calming blend to ease you toward rest. The flagship formula — warm, grounding, and deeply soothing.",
+      "ingredients": ["Ashwagandha", "Reishi", "Passionflower"],
+      "videoUrl": "",
+      "inventory": { "pints": 0, "quarts": 0 }
+    },
+    {
+      "id": "brain-sustain",
+      "goal": "Energy",
+      "name": "Brain Sustain",
+      "desc": "Coffee and cordyceps together — sustained mental clarity and physical energy without the crash.",
+      "ingredients": ["Coffee", "Cordyceps", "Lion's Mane"],
+      "videoUrl": "",
+      "inventory": { "pints": 0, "quarts": 0 }
+    },
+    {
+      "id": "lavender-chill",
+      "goal": "Mood",
+      "name": "Lavender Chill",
+      "desc": "Soft, floral, and quietly uplifting. For the moments when you need to exhale and reset.",
+      "ingredients": ["Lavender", "Lemon Balm", "Chamomile"],
+      "videoUrl": "",
+      "inventory": { "pints": 0, "quarts": 0 }
+    },
+    {
+      "id": "maca-mesquite",
+      "goal": "Vitality",
+      "name": "Maca Mesquite Magic",
+      "desc": "Deep, earthy, and nourishing. Ancient Andean and Southwestern desert plants working in concert.",
+      "ingredients": ["Maca", "Mesquite", "Cacao"],
+      "videoUrl": "",
+      "inventory": { "pints": 0, "quarts": 0 }
+    }
+  ]
+}

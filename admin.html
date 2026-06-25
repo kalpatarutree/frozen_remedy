@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frozen Remedy — Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #F5EDE0; --parchment: #EDE0CE;
+      --brown: #5C4A3A; --brown-light: #7A6352;
+      --brown-dark: #3A2E24; --gold: #A08050; --ink: #2E2318;
+      --red: #c0392b; --green: #27ae60;
+    }
+    body { background: var(--cream); color: var(--brown); font-family: Georgia, serif; font-size: 16px; line-height: 1.6; min-height: 100vh; }
+
+    /* LOGIN */
+    #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: var(--parchment); padding: 48px; max-width: 400px; width: 100%; text-align: center; }
+    .login-box h1 { font-size: 1.4rem; margin-bottom: 8px; color: var(--brown-dark); }
+    .login-box p { font-size: 0.9rem; color: var(--brown-light); margin-bottom: 24px; }
+    .login-box input { width: 100%; padding: 12px 16px; border: 1px solid rgba(92,74,58,0.3); background: var(--cream); font-size: 1rem; margin-bottom: 12px; }
+    .login-box button { width: 100%; padding: 12px; background: var(--brown); color: var(--cream); border: none; font-size: 0.9rem; letter-spacing: 0.1em; cursor: pointer; }
+    .login-box button:hover { background: var(--brown-dark); }
+    .login-error { color: var(--red); font-size: 0.85rem; margin-top: 8px; display: none; }
+
+    /* ADMIN */
+    #admin-screen { display: none; max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; border-bottom: 1px solid rgba(160,128,80,0.3); padding-bottom: 20px; }
+    .admin-header h1 { font-size: 1.5rem; color: var(--brown-dark); }
+    .admin-header a { font-size: 0.8rem; color: var(--brown-light); text-decoration: none; }
+    .admin-header a:hover { color: var(--brown-dark); }
+
+    section { margin-bottom: 48px; }
+    section h2 { font-size: 1.1rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; border-bottom: 1px solid rgba(160,128,80,0.2); padding-bottom: 8px; }
+
+    /* PRICES */
+    .price-row { display: flex; gap: 24px; flex-wrap: wrap; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brown-light); }
+    .field input, .field textarea { padding: 10px 14px; border: 1px solid rgba(92,74,58,0.25); background: white; font-size: 0.95rem; font-family: inherit; width: 100%; }
+    .field input[type="number"] { width: 120px; }
+    .field textarea { resize: vertical; min-height: 70px; }
+
+    /* FLAVOR CARDS */
+    .flavor-admin-card { background: var(--parchment); padding: 28px; margin-bottom: 20px; }
+    .flavor-admin-card h3 { font-size: 1rem; color: var(--brown-dark); margin-bottom: 20px; }
+    .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .card-grid { grid-template-columns: 1fr; } }
+    .card-grid .field.full { grid-column: 1 / -1; }
+    .stock-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+
+    /* SAVE */
+    .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--brown-dark); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .save-bar button { padding: 12px 32px; background: var(--gold); color: white; border: none; font-size: 0.9rem; letter-spacing: 0.1em; cursor: pointer; font-family: inherit; }
+    .save-bar button:hover { background: #8a6e40; }
+    .save-bar button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #save-status { font-size: 0.85rem; color: rgba(245,237,224,0.7); }
+    #save-status.ok { color: #6fcf97; }
+    #save-status.err { color: #eb5757; }
+
+    /* SETUP */
+    .setup-note { background: #fff8e7; border-left: 3px solid var(--gold); padding: 16px; font-size: 0.85rem; color: var(--brown); margin-bottom: 24px; line-height: 1.6; }
+    .setup-note a { color: var(--gold); }
+    .token-field { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .token-field input { flex: 1; min-width: 200px; }
+    .token-field button { padding: 10px 20px; background: var(--brown); color: white; border: none; cursor: pointer; font-family: inherit; font-size: 0.85rem; white-space: nowrap; }
+    .token-field button:hover { background: var(--brown-dark); }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Frozen Remedy Admin</h1>
+    <p>Enter your password to manage products and inventory.</p>
+    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error">Incorrect password.</div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-screen">
+  <div class="admin-header">
+    <h1>Frozen Remedy — Admin</h1>
+    <a href="/" target="_blank">← View Site</a>
+  </div>
+
+  <!-- GITHUB SETUP -->
+  <section id="setup-section">
+    <h2>GitHub Setup</h2>
+    <div class="setup-note">
+      To save changes to the live site, paste a GitHub Personal Access Token below.
+      Create one at <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> —
+      select <strong>Fine-grained token</strong>, choose the <strong>frozen_remedy</strong> repo,
+      and grant <strong>Contents → Read and write</strong>. Your token is stored only in this browser.
+    </div>
+    <div class="token-field">
+      <input type="password" id="gh-token" placeholder="github_pat_..." />
+      <button onclick="saveToken()">Save Token</button>
+      <span id="token-status" style="font-size:0.8rem;color:var(--brown-light)"></span>
+    </div>
+  </section>
+
+  <!-- PRICES -->
+  <section>
+    <h2>Prices</h2>
+    <div class="price-row">
+      <div class="field">
+        <label>Pint Price ($)</label>
+        <input type="number" id="price-pint" min="0" step="0.50" />
+      </div>
+      <div class="field">
+        <label>Quart Price ($)</label>
+        <input type="number" id="price-quart" min="0" step="0.50" />
+      </div>
+    </div>
+  </section>
+
+  <!-- FLAVORS -->
+  <section>
+    <h2>Flavors & Inventory</h2>
+    <div id="flavors-editor"></div>
+  </section>
+
+  <div style="height:80px"></div>
+</div>
+
+<!-- SAVE BAR -->
+<div class="save-bar" id="save-bar" style="display:none">
+  <span id="save-status">Unsaved changes will be lost if you leave.</span>
+  <button id="save-btn" onclick="saveAll()">Save & Deploy</button>
+</div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────────────────
+  const ADMIN_PASSWORD = "remedy2024";   // change this to your own password
+  const GITHUB_REPO    = "kalpatarutree/frozen_remedy";
+  const GITHUB_BRANCH  = "main";
+  const PRODUCTS_PATH  = "products.json";
+
+  // ── Login ────────────────────────────────────────────────────────────────
+  function doLogin() {
+    const pw = document.getElementById("pw-input").value;
+    if (pw === ADMIN_PASSWORD) {
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("admin-screen").style.display = "block";
+      document.getElementById("save-bar").style.display = "flex";
+      init();
+    } else {
+      document.getElementById("login-error").style.display = "block";
+    }
+  }
+
+  // ── Token storage ────────────────────────────────────────────────────────
+  function saveToken() {
+    const t = document.getElementById("gh-token").value.trim();
+    if (!t) return;
+    localStorage.setItem("fr_admin_token", t);
+    document.getElementById("token-status").textContent = "✓ Saved";
+  }
+
+  function getToken() {
+    return localStorage.getItem("fr_admin_token") || "";
+  }
+
+  // ── Load products.json ───────────────────────────────────────────────────
+  let data = null;
+
+  async function init() {
+    const savedToken = getToken();
+    if (savedToken) {
+      document.getElementById("gh-token").value = savedToken;
+      document.getElementById("token-status").textContent = "✓ Token loaded";
+    }
+
+    try {
+      const res = await fetch("products.json?v=" + Date.now());
+      data = await res.json();
+    } catch (e) {
+      alert("Could not load products.json. Make sure it exists in the repo.");
+      return;
+    }
+
+    document.getElementById("price-pint").value  = data.prices.pint;
+    document.getElementById("price-quart").value = data.prices.quart;
+    renderFlavors();
+  }
+
+  // ── Render flavor editors ────────────────────────────────────────────────
+  function renderFlavors() {
+    const container = document.getElementById("flavors-editor");
+    container.innerHTML = "";
+    data.flavors.forEach((f, i) => {
+      const div = document.createElement("div");
+      div.className = "flavor-admin-card";
+      div.innerHTML = `
+        <h3>Flavor ${i + 1}</h3>
+        <div class="card-grid">
+          <div class="field">
+            <label>Name</label>
+            <input type="text" data-i="${i}" data-field="name" value="${esc(f.name)}" />
+          </div>
+          <div class="field">
+            <label>Goal / Category</label>
+            <input type="text" data-i="${i}" data-field="goal" value="${esc(f.goal)}" />
+          </div>
+          <div class="field full">
+            <label>Description</label>
+            <textarea data-i="${i}" data-field="desc">${esc(f.desc)}</textarea>
+          </div>
+          <div class="field full">
+            <label>Ingredients (comma-separated)</label>
+            <input type="text" data-i="${i}" data-field="ingredients" value="${esc(f.ingredients.join(", "))}" />
+          </div>
+          <div class="field full">
+            <label>Video URL (optional)</label>
+            <input type="url" data-i="${i}" data-field="videoUrl" value="${esc(f.videoUrl || "")}" placeholder="https://..." />
+          </div>
+        </div>
+        <div style="margin-top:20px">
+          <div class="field" style="margin-bottom:8px"><label>Inventory</label></div>
+          <div class="stock-row">
+            <div class="field">
+              <label>Pints in stock</label>
+              <input type="number" min="0" data-i="${i}" data-field="inv-pints" value="${f.inventory?.pints || 0}" style="width:100px" />
+            </div>
+            <div class="field">
+              <label>Quarts in stock</label>
+              <input type="number" min="0" data-i="${i}" data-field="inv-quarts" value="${f.inventory?.quarts || 0}" style="width:100px" />
+            </div>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function esc(str) {
+    return String(str || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  // ── Collect form values ──────────────────────────────────────────────────
+  function collectData() {
+    const out = {
+      prices: {
+        pint:  parseFloat(document.getElementById("price-pint").value)  || 0,
+        quart: parseFloat(document.getElementById("price-quart").value) || 0
+      },
+      flavors: JSON.parse(JSON.stringify(data.flavors))
+    };
+
+    document.querySelectorAll("[data-field]").forEach(el => {
+      const i     = parseInt(el.dataset.i);
+      const field = el.dataset.field;
+      const val   = el.tagName === "TEXTAREA" ? el.value : el.value;
+      if (field === "ingredients") {
+        out.flavors[i].ingredients = val.split(",").map(s => s.trim()).filter(Boolean);
+      } else if (field === "inv-pints") {
+        if (!out.flavors[i].inventory) out.flavors[i].inventory = {};
+        out.flavors[i].inventory.pints = parseInt(val) || 0;
+      } else if (field === "inv-quarts") {
+        if (!out.flavors[i].inventory) out.flavors[i].inventory = {};
+        out.flavors[i].inventory.quarts = parseInt(val) || 0;
+      } else {
+        out.flavors[i][field] = val;
+      }
+    });
+
+    return out;
+  }
+
+  // ── Save to GitHub ───────────────────────────────────────────────────────
+  async function saveAll() {
+    const token = getToken();
+    if (!token) {
+      alert("Please enter and save your GitHub token in the Setup section above.");
+      return;
+    }
+
+    const btn    = document.getElementById("save-btn");
+    const status = document.getElementById("save-status");
+    btn.disabled = true;
+    status.className = "";
+    status.textContent = "Saving…";
+
+    const newData = collectData();
+    const content = JSON.stringify(newData, null, 2);
+    const encoded = btoa(unescape(encodeURIComponent(content)));
+
+    try {
+      // Get current file SHA (needed for update)
+      const getRes = await fetch(
+        `https://api.github.com/repos/${GITHUB_REPO}/contents/${PRODUCTS_PATH}?ref=${GITHUB_BRANCH}`,
+        { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
+      );
+      const fileInfo = await getRes.json();
+      const sha = fileInfo.sha;
+
+      // Commit updated file
+      const putRes = await fetch(
+        `https://api.github.com/repos/${GITHUB_REPO}/contents/${PRODUCTS_PATH}`,
+        {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: "Update products via admin",
+            content: encoded,
+            sha: sha,
+            branch: GITHUB_BRANCH
+          })
+        }
+      );
+
+      if (!putRes.ok) {
+        const err = await putRes.json();
+        throw new Error(err.message || "GitHub API error");
+      }
+
+      data = newData;
+      status.className = "ok";
+      status.textContent = "✓ Saved! Vercel is deploying — live in ~30 seconds.";
+    } catch (e) {
+      status.className = "err";
+      status.textContent = "Error: " + e.message;
+    }
+
+    btn.disabled = false;
+  }
+</script>
+</body>
+</html>
