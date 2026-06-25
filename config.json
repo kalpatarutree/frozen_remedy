@@ -1,10 +1,10 @@
 {
   "emailjs": {
-    "publicKey": "",
-    "serviceId": "",
-    "ownerTemplateId": "",
-    "customerTemplateId": "",
-    "ownerEmail": ""
+    "publicKey": "rbqTLj9nSGq9tOCv0",
+    "serviceId": "service_9293ddj",
+    "ownerTemplateId": "template_ql7b0gl",
+    "customerTemplateId": "template_2ypjipn",
+    "ownerEmail": "curtis.humphrey@gmail.com"
   },
   "siteUrl": "https://frozen-remedy-nipdknqqu-kalpatarutrees-projects.vercel.app"
 }
