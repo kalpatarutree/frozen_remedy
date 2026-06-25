@@ -1,0 +1,17 @@
+{
+  "name": "Frozen Remedy",
+  "short_name": "Frozen Remedy",
+  "description": "Ethnobotanical botanical desserts. Vegan ice cream with nootropic ingredients. Phoenix, Oregon.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5EDE0",
+  "theme_color": "#5C4A3A",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
