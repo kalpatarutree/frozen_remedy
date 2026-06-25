@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Frozen Remedy — Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -66,6 +67,23 @@
     .token-field input { flex: 1; min-width: 200px; }
     .token-field button { padding: 10px 20px; background: var(--brown); color: white; border: none; cursor: pointer; font-family: inherit; font-size: 0.85rem; white-space: nowrap; }
     .token-field button:hover { background: var(--brown-dark); }
+
+    /* RESERVATIONS */
+    .res-card { background: var(--parchment); padding: 20px 24px; margin-bottom: 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .res-info { flex: 1; min-width: 200px; }
+    .res-info strong { display: block; font-size: 1rem; color: var(--brown-dark); margin-bottom: 4px; }
+    .res-info span { font-size: 0.85rem; color: var(--brown-light); display: block; line-height: 1.6; }
+    .res-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .res-actions button { padding: 8px 18px; border: none; cursor: pointer; font-family: inherit; font-size: 0.8rem; letter-spacing: 0.05em; }
+    .btn-confirm { background: var(--green); color: white; }
+    .btn-confirm:hover { background: #219150; }
+    .btn-decline { background: transparent; border: 1px solid rgba(92,74,58,0.3) !important; color: var(--brown-light); }
+    .btn-decline:hover { border-color: #c0392b !important; color: #c0392b; }
+    .res-badge { display: inline-block; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; margin-bottom: 6px; }
+    .badge-pending   { background: #fff3cd; color: #856404; }
+    .badge-confirmed { background: #d1e7dd; color: #0f5132; }
+    .badge-declined  { background: #f8d7da; color: #842029; }
+    .empty-note { color: var(--brown-light); font-style: italic; font-size: 0.95rem; }
   </style>
 </head>
 <body>
@@ -102,6 +120,30 @@
       <button onclick="saveToken()">Save Token</button>
       <span id="token-status" style="font-size:0.8rem;color:var(--brown-light)"></span>
     </div>
+  </section>
+
+  <!-- EMAILJS SETUP -->
+  <section id="emailjs-section">
+    <h2>Email Setup (EmailJS)</h2>
+    <div class="setup-note">
+      To send confirmation emails to customers, create a free account at
+      <a href="https://emailjs.com" target="_blank">emailjs.com</a>, then:<br>
+      1. Add an <strong>Email Service</strong> (Gmail works great) and copy the <strong>Service ID</strong><br>
+      2. Create an <strong>Email Template</strong> — use variables <code>{{to_email}}</code>, <code>{{to_name}}</code>, <code>{{flavor}}</code>, <code>{{size}}</code>, <code>{{quantity}}</code>, <code>{{price}}</code><br>
+      3. Copy the <strong>Template ID</strong> and your account's <strong>Public Key</strong>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:500px">
+      <div class="field"><label>EmailJS Service ID</label><input type="text" id="ejs-service" placeholder="service_xxxxxxx" /></div>
+      <div class="field"><label>EmailJS Template ID</label><input type="text" id="ejs-template" placeholder="template_xxxxxxx" /></div>
+      <div class="field"><label>EmailJS Public Key</label><input type="text" id="ejs-pubkey" placeholder="xxxxxxxxxxxxxxxxxxxx" /></div>
+      <div><button onclick="saveEmailJS()" style="padding:10px 24px;background:var(--brown);color:white;border:none;cursor:pointer;font-family:inherit">Save Email Config</button> <span id="ejs-status" style="font-size:0.8rem;color:var(--brown-light);margin-left:10px"></span></div>
+    </div>
+  </section>
+
+  <!-- RESERVATIONS -->
+  <section>
+    <h2>Reservations</h2>
+    <div id="reservations-list"><p class="empty-note">Loading…</p></div>
   </section>
 
   <!-- PRICES -->
@@ -176,6 +218,13 @@
       document.getElementById("token-status").textContent = "✓ Token loaded";
     }
 
+    // Load EmailJS config
+    const ejsCfg = JSON.parse(localStorage.getItem("fr_emailjs") || "{}");
+    if (ejsCfg.service)  document.getElementById("ejs-service").value  = ejsCfg.service;
+    if (ejsCfg.template) document.getElementById("ejs-template").value = ejsCfg.template;
+    if (ejsCfg.pubkey)   document.getElementById("ejs-pubkey").value   = ejsCfg.pubkey;
+    if (ejsCfg.pubkey)   emailjs.init(ejsCfg.pubkey);
+
     try {
       const res = await fetch("products.json?v=" + Date.now());
       data = await res.json();
@@ -187,6 +236,138 @@
     document.getElementById("price-pint").value  = data.prices.pint;
     document.getElementById("price-quart").value = data.prices.quart;
     renderFlavors();
+    await loadReservations();
+  }
+
+  // ── EmailJS config ───────────────────────────────────────────────────────
+  function saveEmailJS() {
+    const cfg = {
+      service:  document.getElementById("ejs-service").value.trim(),
+      template: document.getElementById("ejs-template").value.trim(),
+      pubkey:   document.getElementById("ejs-pubkey").value.trim()
+    };
+    localStorage.setItem("fr_emailjs", JSON.stringify(cfg));
+    if (cfg.pubkey) emailjs.init(cfg.pubkey);
+    document.getElementById("ejs-status").textContent = "✓ Saved";
+  }
+
+  function getEmailJSConfig() {
+    return JSON.parse(localStorage.getItem("fr_emailjs") || "{}");
+  }
+
+  // ── Reservations ─────────────────────────────────────────────────────────
+  let reservations = [];
+  let reservationsSHA = "";
+
+  async function loadReservations() {
+    const token = getToken();
+    if (!token) { document.getElementById("reservations-list").innerHTML = '<p class="empty-note">Add your GitHub token above to load reservations.</p>'; return; }
+
+    try {
+      const res = await fetch(
+        "https://api.github.com/repos/" + GITHUB_REPO + "/contents/reservations.json?ref=" + GITHUB_BRANCH,
+        { headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json" } }
+      );
+      const info = await res.json();
+      reservationsSHA = info.sha;
+      reservations = JSON.parse(atob(info.content.replace(/\n/g, "")));
+      renderReservations();
+    } catch (e) {
+      document.getElementById("reservations-list").innerHTML = '<p class="empty-note">Could not load reservations: ' + e.message + '</p>';
+    }
+  }
+
+  function renderReservations() {
+    const container = document.getElementById("reservations-list");
+    const pending = reservations.filter(r => r.status === "pending");
+    const rest    = reservations.filter(r => r.status !== "pending");
+    const all     = [...pending, ...rest];
+
+    if (all.length === 0) { container.innerHTML = '<p class="empty-note">No reservations yet.</p>'; return; }
+
+    container.innerHTML = all.map(r => `
+      <div class="res-card" id="res-${r.id}">
+        <div class="res-info">
+          <span class="res-badge badge-${r.status}">${r.status}</span>
+          <strong>${r.name}</strong>
+          <span>${r.email}</span>
+          <span>${r.flavor} — ${r.size} × ${r.quantity} ($${r.price})</span>
+          <span style="font-size:0.75rem;margin-top:4px">${new Date(r.createdAt).toLocaleString()}</span>
+        </div>
+        <div class="res-actions">
+          ${r.status === "pending" ? `
+            <button class="btn-confirm" onclick="confirmReservation('${r.id}')">Confirm</button>
+            <button class="btn-decline" onclick="declineReservation('${r.id}')">Decline</button>
+          ` : ""}
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function saveReservations(commitMsg) {
+    const token = getToken();
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(reservations, null, 2))));
+    const res = await fetch(
+      "https://api.github.com/repos/" + GITHUB_REPO + "/contents/reservations.json",
+      {
+        method: "PUT",
+        headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+        body: JSON.stringify({ message: commitMsg, content: encoded, sha: reservationsSHA, branch: GITHUB_BRANCH })
+      }
+    );
+    const updated = await res.json();
+    reservationsSHA = updated.content.sha;
+  }
+
+  async function confirmReservation(id) {
+    const r = reservations.find(x => x.id === id);
+    if (!r) return;
+
+    const btn = document.querySelector(`#res-${id} .btn-confirm`);
+    btn.disabled = true;
+    btn.textContent = "Confirming…";
+
+    try {
+      // Send confirmation email
+      const cfg = getEmailJSConfig();
+      if (cfg.service && cfg.template && cfg.pubkey) {
+        await emailjs.send(cfg.service, cfg.template, {
+          to_email: r.email,
+          to_name:  r.name,
+          flavor:   r.flavor,
+          size:     r.size,
+          quantity: r.quantity,
+          price:    "$" + r.price
+        });
+      }
+
+      // Update reservation status
+      r.status = "confirmed";
+      await saveReservations("Confirm reservation: " + r.name);
+
+      // Subtract from inventory in products.json
+      const inv = data.flavors.find(f => f.id === r.flavorId);
+      if (inv && inv.inventory) {
+        if (r.size === "pint")  inv.inventory.pints  = Math.max(0, (inv.inventory.pints  || 0) - r.quantity);
+        if (r.size === "quart") inv.inventory.quarts = Math.max(0, (inv.inventory.quarts || 0) - r.quantity);
+        await saveAll(true);
+      }
+
+      renderReservations();
+    } catch (e) {
+      alert("Error: " + e.message || JSON.stringify(e));
+      btn.disabled = false;
+      btn.textContent = "Confirm";
+    }
+  }
+
+  async function declineReservation(id) {
+    if (!confirm("Decline this reservation?")) return;
+    const r = reservations.find(x => x.id === id);
+    if (!r) return;
+    r.status = "declined";
+    await saveReservations("Decline reservation: " + r.name);
+    renderReservations();
   }
 
   // ── Render flavor editors ────────────────────────────────────────────────
@@ -273,18 +454,16 @@
   }
 
   // ── Save to GitHub ───────────────────────────────────────────────────────
-  async function saveAll() {
+  async function saveAll(silent = false) {
     const token = getToken();
     if (!token) {
-      alert("Please enter and save your GitHub token in the Setup section above.");
+      if (!silent) alert("Please enter and save your GitHub token in the Setup section above.");
       return;
     }
 
     const btn    = document.getElementById("save-btn");
     const status = document.getElementById("save-status");
-    btn.disabled = true;
-    status.className = "";
-    status.textContent = "Saving…";
+    if (!silent) { btn.disabled = true; status.className = ""; status.textContent = "Saving…"; }
 
     const newData = collectData();
     const content = JSON.stringify(newData, null, 2);
@@ -319,15 +498,16 @@
         throw new Error(err.message || "GitHub API error");
       }
 
-      data = newData;
-      status.className = "ok";
-      status.textContent = "✓ Saved! Vercel is deploying — live in ~30 seconds.";
+      if (!silent) {
+        data = newData;
+        status.className = "ok";
+        status.textContent = "✓ Saved! Vercel is deploying — live in ~30 seconds.";
+      }
     } catch (e) {
-      status.className = "err";
-      status.textContent = "Error: " + e.message;
+      if (!silent) { status.className = "err"; status.textContent = "Error: " + e.message; }
     }
 
-    btn.disabled = false;
+    if (!silent) btn.disabled = false;
   }
 </script>
 </body>
