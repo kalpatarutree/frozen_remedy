@@ -193,15 +193,15 @@
   const magicId     = urlParams.get("id");
 
   if (magicAction && magicId) {
-    // Show a minimal prompt instead of full login
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("login-screen").innerHTML = `
         <div class="login-box">
-          <h1>Frozen Remedy Admin</h1>
-          <p>${magicAction === "confirm" ? "Confirm this reservation?" : "Decline this reservation?"}</p>
-          <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
-          <button onclick="doLogin()">Sign In & ${magicAction === "confirm" ? "Confirm" : "Decline"}</button>
+          <h1>Frozen Remedy</h1>
+          <p style="margin-bottom:16px">${magicAction === "confirm" ? "Confirm this reservation and notify the customer?" : "Decline this reservation?"}</p>
+          <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')doMagicAction()" />
+          <button onclick="doMagicAction()" id="magic-btn">${magicAction === "confirm" ? "Confirm & Notify Customer" : "Decline Reservation"}</button>
           <div class="login-error" id="login-error">Incorrect password.</div>
+          <div id="magic-status" style="margin-top:16px;font-size:0.9rem;color:var(--brown-light)"></div>
         </div>`;
     });
   }
@@ -216,6 +216,53 @@
       init();
     } else {
       document.getElementById("login-error").style.display = "block";
+    }
+  }
+
+  // ── Magic link action (confirm/decline from email) ────────────────────────
+  async function doMagicAction() {
+    const pw = document.getElementById("pw-input").value;
+    if (pw !== ADMIN_PASSWORD) {
+      document.getElementById("login-error").style.display = "block";
+      return;
+    }
+
+    const btn    = document.getElementById("magic-btn");
+    const status = document.getElementById("magic-status");
+    btn.disabled = true;
+    status.textContent = magicAction === "confirm" ? "Confirming…" : "Declining…";
+
+    try {
+      // Load config for EmailJS
+      const cfgRes = await fetch("config.json?v=" + Date.now());
+      siteConfig = await cfgRes.json();
+      const ejs = siteConfig.emailjs || {};
+      if (ejs.publicKey) emailjs.init(ejs.publicKey);
+
+      // Load products
+      const prodRes = await fetch("products.json?v=" + Date.now());
+      data = await prodRes.json();
+
+      // Load reservations
+      await loadReservations();
+
+      // Perform action
+      if (magicAction === "confirm") {
+        await confirmReservation(magicId);
+        status.style.color = "var(--green)";
+        status.textContent = "✓ Reservation confirmed. Customer has been notified.";
+      } else {
+        await declineReservation(magicId, true);
+        status.style.color = "var(--red)";
+        status.textContent = "Reservation declined.";
+      }
+
+      btn.textContent = "Done";
+      history.replaceState({}, "", "/admin.html");
+    } catch(e) {
+      status.style.color = "var(--red)";
+      status.textContent = "Error: " + (e.message || JSON.stringify(e));
+      btn.disabled = false;
     }
   }
 
@@ -267,16 +314,6 @@
     document.getElementById("price-quart").value = data.prices.quart;
     renderFlavors();
     await loadReservations();
-
-    // Handle magic link action after everything is loaded
-    if (magicAction && magicId) {
-      if (magicAction === "confirm") await confirmReservation(magicId);
-      else if (magicAction === "decline") await declineReservation(magicId, true);
-      // Scroll to reservations
-      document.querySelector("#reservations-list")?.scrollIntoView({ behavior: "smooth" });
-      // Clean URL
-      history.replaceState({}, "", "/admin.html");
-    }
   }
 
   // ── EmailJS config ───────────────────────────────────────────────────────
