@@ -16,7 +16,7 @@
       ],
       "videoUrl": "",
       "inventory": {
-        "pints": 0,
+        "pints": 3,
         "quarts": 0
       }
     },
@@ -48,8 +48,8 @@
       ],
       "videoUrl": "",
       "inventory": {
-        "pints": 3,
-        "quarts": 5
+        "pints": 0,
+        "quarts": 0
       }
     },
     {
@@ -64,8 +64,8 @@
       ],
       "videoUrl": "",
       "inventory": {
-        "pints": 3,
-        "quarts": 2
+        "pints": 0,
+        "quarts": 0
       }
     }
   ]
