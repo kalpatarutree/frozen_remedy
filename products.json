@@ -5,68 +5,31 @@
   },
   "flavors": [
     {
-      "id": "nice-dreams",
-      "goal": "Sleep",
-      "name": "Nice Dreams",
-      "desc": "A gentle, calming blend to ease you toward rest. The flagship formula — warm, grounding, and deeply soothing.",
-      "ingredients": [
-        "Ashwagandha",
-        "Reishi",
-        "Passionflower"
-      ],
-      "videoUrl": "",
-      "inventory": {
-        "pints": 3,
-        "quarts": 0
-      }
-    },
-    {
-      "id": "brain-sustain",
-      "goal": "Energy",
-      "name": "Brain Sustain",
-      "desc": "Coffee and cordyceps together — sustained mental clarity and physical energy without the crash.",
-      "ingredients": [
-        "Coffee",
-        "Cordyceps",
-        "Lion's Mane"
-      ],
-      "videoUrl": "",
-      "inventory": {
-        "pints": 0,
-        "quarts": 0
-      }
-    },
-    {
-      "id": "lavender-chill",
-      "goal": "Mood",
-      "name": "Lavender Chill",
-      "desc": "Soft, floral, and quietly uplifting. For the moments when you need to exhale and reset.",
-      "ingredients": [
-        "Lavender",
-        "Lemon Balm",
-        "Chamomile"
-      ],
-      "videoUrl": "",
-      "inventory": {
-        "pints": 0,
-        "quarts": 0
-      }
-    },
-    {
-      "id": "maca-mesquite",
+      "id": "maple-maca",
       "goal": "Vitality",
-      "name": "Maca Mesquite Magic",
+      "name": "Maple Maca",
       "desc": "Deep, earthy, and nourishing. Ancient Andean and Southwestern desert plants working in concert.",
-      "ingredients": [
-        "Maca",
-        "Mesquite",
-        "Cacao"
-      ],
+      "ingredients": ["Maca", "Mesquite", "Cordyceps", "Pine Pollen"],
       "videoUrl": "",
-      "inventory": {
-        "pints": 0,
-        "quarts": 0
-      }
+      "inventory": { "pints": 3, "quarts": 2 }
+    },
+    {
+      "id": "cacao-cordyceps",
+      "goal": "Energy & Focus",
+      "name": "Cacao Cordyceps",
+      "desc": "Coffee and cordyceps together — sustained mental clarity and physical energy without the crash.",
+      "ingredients": ["Cacao", "Lion's Mane", "Reishi", "Cordyceps"],
+      "videoUrl": "",
+      "inventory": { "pints": 0, "quarts": 0 }
+    },
+    {
+      "id": "blue-ritual",
+      "goal": "Calm & Clarity",
+      "name": "Blue Ritual",
+      "desc": "Soft, floral, and quietly uplifting. For the moments when you need to exhale and reset.",
+      "ingredients": ["Blue Lotus", "Lavender", "L-Theanine", "Blueberry"],
+      "videoUrl": "",
+      "inventory": { "pints": 0, "quarts": 0 }
     }
   ]
 }
