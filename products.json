@@ -8,28 +8,52 @@
       "id": "maple-maca",
       "goal": "Vitality",
       "name": "Maple Maca",
-      "desc": "Deep, earthy, and nourishing. Ancient Andean and Southwestern desert plants working in concert.",
-      "ingredients": ["Maca", "Mesquite", "Cordyceps", "Pine Pollen"],
+      "desc": "",
+      "ingredients": [
+        "Maca",
+        "Mesquite",
+        "Cordyceps",
+        "Pine Pollen"
+      ],
       "videoUrl": "",
-      "inventory": { "pints": 3, "quarts": 2 }
+      "inventory": {
+        "pints": 3,
+        "quarts": 2
+      }
     },
     {
       "id": "cacao-cordyceps",
       "goal": "Energy & Focus",
       "name": "Cacao Cordyceps",
-      "desc": "Coffee and cordyceps together — sustained mental clarity and physical energy without the crash.",
-      "ingredients": ["Cacao", "Lion's Mane", "Reishi", "Cordyceps"],
+      "desc": "",
+      "ingredients": [
+        "Cacao",
+        "Lion's Mane",
+        "Reishi",
+        "Cordyceps"
+      ],
       "videoUrl": "",
-      "inventory": { "pints": 0, "quarts": 0 }
+      "inventory": {
+        "pints": 1,
+        "quarts": 4
+      }
     },
     {
       "id": "blue-ritual",
       "goal": "Calm & Clarity",
       "name": "Blue Ritual",
-      "desc": "Soft, floral, and quietly uplifting. For the moments when you need to exhale and reset.",
-      "ingredients": ["Blue Lotus", "Lavender", "L-Theanine", "Blueberry"],
+      "desc": "",
+      "ingredients": [
+        "Blue Lotus",
+        "Lavender",
+        "L-Theanine",
+        "Blueberry"
+      ],
       "videoUrl": "",
-      "inventory": { "pints": 0, "quarts": 0 }
+      "inventory": {
+        "pints": 0,
+        "quarts": 5
+      }
     }
   ]
 }
