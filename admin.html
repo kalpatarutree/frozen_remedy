@@ -133,14 +133,7 @@
 
     <!-- FLAVORS TAB -->
     <div class="tab-content active" id="tab-flavors">
-      <!-- GitHub Token -->
-      <div style="background:rgba(160,128,80,0.08);border:1px solid rgba(160,128,80,0.2);border-radius:4px;padding:16px;margin-bottom:24px;">
-        <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">GitHub Token (stored in browser only)</div>
-        <input type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(160,128,80,0.25);color:var(--cream);padding:10px 12px;font-size:0.8rem;border-radius:3px;"
-          oninput="GH_TOKEN=this.value;localStorage.setItem('gh_token',this.value)" />
-        <div style="font-size:0.65rem;color:rgba(240,230,200,0.5);margin-top:6px;">Classic GitHub token with repo scope. Only needed to save changes.</div>
-      </div>
+
       <!-- Prices -->
       <div style="background:rgba(160,128,80,0.08);border:1px solid rgba(160,128,80,0.2);border-radius:4px;padding:16px;margin-bottom:24px;">
         <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Prices</div>
@@ -174,11 +167,7 @@
   <script>
     const CORRECT_PIN = "frozenremedy2026";
 
-    // ── GITHUB CONFIG ────────────────────────────────────────────────────────
-    const GITHUB_REPO   = "kalpatarutree/frozen_remedy";
-    const GITHUB_BRANCH = "main";
-        let GH_TOKEN = ["ghp_rujQyPOZlwyq98iH","VtpOiuZdkkztk84MsMR5"].join("");
-
+    // ── DATA CONFIG ──────────────────────────────────────────────────────────
     let _productsData = null;
 
     async function loadProductsFromGitHub() {
@@ -196,23 +185,16 @@
     }
 
     async function saveProductsToGitHub(data) {
-      const shaRes = await fetch(
-        `https://api.github.com/repos/${GITHUB_REPO}/contents/products.json?ref=${GITHUB_BRANCH}`,
-        { headers: { Authorization: "token " + GH_TOKEN, Accept: "application/vnd.github.v3+json" } }
-      );
-      if (!shaRes.ok) { const e = await shaRes.json(); alert("GitHub error: " + (e.message || shaRes.status)); return false; }
-      const { sha } = await shaRes.json();
-      const body = JSON.stringify(data, null, 2);
-      const encoded = btoa(unescape(encodeURIComponent(body)));
-      const putRes = await fetch(
-        `https://api.github.com/repos/${GITHUB_REPO}/contents/products.json`,
-        {
-          method: "PUT",
-          headers: { Authorization: "token " + GH_TOKEN, Accept: "application/vnd.github.v3+json", "Content-Type": "application/json" },
-          body: JSON.stringify({ message: "Update products.json from admin", content: encoded, sha, branch: GITHUB_BRANCH })
-        }
-      );
-      if (!putRes.ok) { const e = await putRes.json(); alert("Save error: " + (e.message || putRes.status)); return false; }
+      const res = await fetch("/api/save-products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        const e = await res.json();
+        alert("Save error: " + (e.error || res.status));
+        return false;
+      }
       return true;
     }
 
@@ -228,11 +210,6 @@
       if (document.getElementById("pin-input").value === CORRECT_PIN) {
         document.getElementById("pin-screen").style.display = "none";
         document.getElementById("admin-panel").style.display = "block";
-        // Restore saved token
-        const saved = localStorage.getItem("gh_token") || "";
-        GH_TOKEN = saved;
-        const tokenInput = document.getElementById("gh-token-input");
-        if (tokenInput) tokenInput.value = saved;
         // Load from GitHub before rendering
         await loadProductsFromGitHub();
         renderAdmin();
