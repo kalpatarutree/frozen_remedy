@@ -87,11 +87,11 @@
     .divider-mark { font-family: "Cinzel", serif; font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
 
     /* SECTIONS */
-    section { padding: 90px 24px; }
-    .section-inner { max-width: 900px; margin: 0 auto; }
-    .section-eyebrow { font-family: "Cinzel", serif; font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; display: block; }
+    section { padding: 90px 24px; text-align: center; }
+    .section-inner { text-align: center; margin-left: auto; margin-right: auto; max-width: 900px; margin: 0 auto; }
+    .section-eyebrow { display: block; text-align: center; font-family: "Cinzel", serif; font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; display: block; }
     .section-title { font-family: "Cormorant Garamond", serif; font-size: clamp(1.7rem, 5vw, 2.8rem); font-weight: 300; font-style: italic; color: var(--brown-dark); margin-bottom: 18px; line-height: 1.2; }
-    .section-body { font-size: clamp(1.1rem, 2.5vw, 1.25rem); color: var(--brown-light); font-weight: 300; max-width: 540px; line-height: 1.8; }
+    .section-body { margin-left: auto; margin-right: auto; font-size: clamp(1.1rem, 2.5vw, 1.25rem); color: var(--brown-light); font-weight: 300; max-width: 540px; line-height: 1.8; }
 
     /* ABOUT */
     .about { background: var(--parchment); }
@@ -113,14 +113,14 @@
     /* VISIT */
     .visit { background: var(--ink); color: var(--cream); }
     .visit .section-title { color: var(--cream); }
-    .visit .section-eyebrow { color: var(--gold); }
-    .visit .section-body { color: rgba(245,237,224,0.65); }
-    .visit-details { margin-top: 48px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 40px; margin-bottom: 48px; }
+    .visit .section-eyebrow { display: block; text-align: center; color: var(--gold); }
+    .visit .section-body { margin-left: auto; margin-right: auto; color: rgba(245,237,224,0.65); }
+    .visit-details { margin-top: 48px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 40px; margin-bottom: 48px; text-align: center; max-width: 700px; margin-left: auto; margin-right: auto; }
     .visit-label { font-family: "Cinzel", serif; font-size: 0.52rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; display: block; }
     .visit-value { font-family: "Cormorant Garamond", serif; font-size: 1.2rem; font-weight: 300; color: var(--cream); line-height: 1.6; }
-    .visit-note { padding: 24px 28px; border: 1px solid rgba(245,237,224,0.12); max-width: 480px; margin-bottom: 36px; }
+    .visit-note { padding: 24px 28px; border: 1px solid rgba(245,237,224,0.12); max-width: 480px; margin: 0 auto 36px; text-align: center; }
     .visit-note p { font-size: 0.88rem; color: rgba(245,237,224,0.55); font-style: italic; line-height: 1.7; }
-    .visit-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .visit-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: center; }
 
     /* FOOTER */
     footer { background: var(--ink); border-top: 1px solid rgba(245,237,224,0.06); padding: 40px 24px; text-align: center; }
