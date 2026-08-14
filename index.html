@@ -168,6 +168,8 @@
     .res-flavor-btn { background: var(--parchment); border: 2px solid transparent; padding: 12px 10px; cursor: pointer; text-align: left; transition: border-color 0.2s, background 0.2s; font-family: inherit; }
     .res-flavor-btn:hover { background: #E8D9C4; }
     .res-flavor-btn.selected { border-color: var(--gold); background: #E8D9C4; }
+    .res-flavor-btn.out-of-stock { cursor: pointer; opacity: 0.65; border-color: rgba(192,57,43,0.2); }
+    .res-flavor-btn.out-of-stock:hover { background: #f9ece9; border-color: rgba(192,57,43,0.4); }
     .res-flavor-btn .fb-goal { font-family: "Cinzel", serif; font-size: 0.45rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
     .res-flavor-btn .fb-name { font-style: italic; font-size: 1rem; color: var(--brown-dark); }
     .res-size-row { display: flex; gap: 12px; margin-bottom: 20px; }
@@ -658,7 +660,7 @@
           btn.onclick = () => {
             closeReserveModal();
             document.getElementById("res-oos-flavor").textContent = f.name;
-            document.getElementById("oos-modal").classList.add("active");
+            setTimeout(() => document.getElementById("oos-modal").classList.add("active"), 300);
           };
         }
         grid.appendChild(btn);
@@ -780,6 +782,7 @@
 
     document.getElementById("reserve-modal").addEventListener("click", function(e) {
       if (e.target === this) closeReserveModal();
+    document.getElementById("oos-modal").addEventListener("click", function(e){ if(e.target===this) this.classList.remove("active"); });
     });
     if ("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
   </script>
