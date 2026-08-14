@@ -614,8 +614,21 @@
       document.getElementById("res-pint-price").textContent  = "$" + (PRICES.pint  || 12);
       document.getElementById("res-quart-price").textContent = "$" + (PRICES.quart || 20);
       resSelectedSize = null;
-      document.getElementById("res-btn-pint").classList.remove("selected");
-      document.getElementById("res-btn-quart").classList.remove("selected");
+      const inv = getInventory();
+      const pintsLeft  = inv[id]?.pints  || 0;
+      const quartsLeft = inv[id]?.quarts || 0;
+      const pintBtn  = document.getElementById("res-btn-pint");
+      const quartBtn = document.getElementById("res-btn-quart");
+      pintBtn.classList.remove("selected");
+      quartBtn.classList.remove("selected");
+      pintBtn.disabled  = pintsLeft  === 0;
+      quartBtn.disabled = quartsLeft === 0;
+      pintBtn.style.opacity  = pintsLeft  === 0 ? "0.35" : "1";
+      quartBtn.style.opacity = quartsLeft === 0 ? "0.35" : "1";
+      pintBtn.style.cursor   = pintsLeft  === 0 ? "not-allowed" : "pointer";
+      quartBtn.style.cursor  = quartsLeft === 0 ? "not-allowed" : "pointer";
+      pintBtn.title  = pintsLeft  === 0 ? "Out of stock" : "";
+      quartBtn.title = quartsLeft === 0 ? "Out of stock" : "";
     }
 
     function selectSize(size) {
