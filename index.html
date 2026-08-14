@@ -297,6 +297,27 @@
     </div>
   </section>
 
+
+  <!-- OUT OF STOCK MODAL -->
+  <div class="modal-overlay" id="oos-modal">
+    <div class="modal-box" style="max-width:420px;">
+      <button class="modal-close" onclick="document.getElementById('oos-modal').classList.remove('active')">✕ Close</button>
+      <p class="modal-eyebrow">Sorry, we're out of stock!</p>
+      <h2 class="modal-title" style="margin-bottom:12px;">We'll keep you posted</h2>
+      <p style="font-size:0.9rem;color:var(--brown-light);margin-bottom:24px;line-height:1.6;">
+        <strong id="res-oos-flavor"></strong> is currently unavailable. Email us and we'll let you know as soon as it's back.
+      </p>
+      <form onsubmit="submitOosEmail(event)" style="display:flex;flex-direction:column;gap:12px;">
+        <input type="text" id="oos-name" placeholder="Your name" required
+          style="padding:12px;border:1px solid rgba(92,74,58,0.2);background:var(--parchment);font-family:inherit;font-size:0.9rem;border-radius:3px;" />
+        <input type="email" id="oos-email" placeholder="Your email" required
+          style="padding:12px;border:1px solid rgba(92,74,58,0.2);background:var(--parchment);font-family:inherit;font-size:0.9rem;border-radius:3px;" />
+        <button type="submit" class="btn-primary" style="width:100%;padding:14px;">Email Us</button>
+      </form>
+      <p id="oos-success" style="display:none;text-align:center;margin-top:16px;color:var(--gold);font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.1em;">✓ We'll be in touch!</p>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer>
     <div class="footer-logo">Frozen Remedy</div>
@@ -512,6 +533,35 @@
     }
     function closeVideoModal() { document.getElementById("video-modal").classList.remove("active"); document.body.style.overflow = ""; document.getElementById("vm-video").innerHTML = ""; }
 
+    // Out-of-stock email
+    async function submitOosEmail(e) {
+      e.preventDefault();
+      const name   = document.getElementById("oos-name").value.trim();
+      const email  = document.getElementById("oos-email").value.trim();
+      const flavor = document.getElementById("res-oos-flavor").textContent;
+      const cfg = SITE_CONFIG.emailjs || {};
+      if (cfg.serviceId && cfg.ownerTemplateId && cfg.ownerEmail) {
+        try {
+          await emailjs.send(cfg.serviceId, cfg.ownerTemplateId, {
+            to_email:       cfg.ownerEmail,
+            customer_name:  name,
+            customer_email: email,
+            flavor:         flavor + " (OUT OF STOCK REQUEST)",
+            size:           "—",
+            quantity:       "—",
+            price:          "—",
+          });
+        } catch(err) { console.warn("OOS email error", err); }
+      }
+      document.getElementById("oos-success").style.display = "block";
+      document.querySelector("#oos-modal form").style.display = "none";
+      setTimeout(() => {
+        document.getElementById("oos-modal").classList.remove("active");
+        document.getElementById("oos-success").style.display = "none";
+        document.querySelector("#oos-modal form").style.display = "flex";
+      }, 3000);
+    }
+
     // Email modal
     function openEmailModal() {
       const submitted = localStorage.getItem("fr_email_submitted")==="1";
@@ -598,11 +648,19 @@
       const inv = getInventory();
       FLAVORS.forEach(f => {
         const inStock = (inv[f.id]?.pints||0) + (inv[f.id]?.quarts||0) > 0;
-        if (!inStock) return;
         const btn = document.createElement("button");
-        btn.className = "res-flavor-btn";
-        btn.innerHTML = `<div class="fb-goal">${f.goal}</div><div class="fb-name">${f.name}</div>`;
-        btn.onclick = () => { selectFlavor(f.id); resShowStep(2); };
+        btn.className = "res-flavor-btn" + (inStock ? "" : " out-of-stock");
+        btn.style.opacity = inStock ? "1" : "0.6";
+        btn.innerHTML = `<div class="fb-goal">${f.goal}</div><div class="fb-name">${f.name}</div>${inStock ? "" : '<div style="font-size:0.6rem;color:#c0392b;margin-top:4px;letter-spacing:0.05em;">Out of Stock</div>'}`;
+        if (inStock) {
+          btn.onclick = () => { selectFlavor(f.id); resShowStep(2); };
+        } else {
+          btn.onclick = () => {
+            closeReserveModal();
+            document.getElementById("res-oos-flavor").textContent = f.name;
+            document.getElementById("oos-modal").classList.add("active");
+          };
+        }
         grid.appendChild(btn);
       });
     }
